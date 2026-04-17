@@ -1,28 +1,38 @@
-import { GoogleGenAI, Modality, HarmCategory, HarmBlockThreshold } from "@google/genai";
+import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
 const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (process as any).env?.GEMINI_API_KEY;
 const ai = new GoogleGenAI({ apiKey });
 
 export type VoiceName = 'Puck' | 'Charon' | 'Kore' | 'Fenrir' | 'Zephyr';
 
-export async function generateSpeech(text: string, voice: VoiceName = 'Kore', acting: { emotion: string | string[], profile: string, pitch: number, raspiness: number }): Promise<string> {
+export async function generateSpeech(
+  text: string, 
+  voice: VoiceName = 'Kore', 
+  acting: { emotion: string[], profile: string, pitch: number, raspiness: number }
+): Promise<string> {
   const { emotion, profile, pitch, raspiness } = acting;
   
   let instructions = [];
-  if (emotion) {
-    if (Array.isArray(emotion)) {
-      instructions.push(...emotion);
-    } else {
-      instructions.push(emotion);
-    }
+  
+  // Handle emotions
+  if (emotion && emotion.length > 0) {
+    emotion.forEach(emo => {
+      // Map 'whisper' or 'whispering' to a more stable tag if needed
+      if (emo === 'whispering' || emo === 'whisper') {
+        instructions.push('whispering');
+      } else {
+        instructions.push(emo);
+      }
+    });
   }
+
   if (profile) instructions.push(`acting like a ${profile}`);
   if (pitch < 40) instructions.push("very deep pitch");
   else if (pitch > 60) instructions.push("very high pitch");
   if (raspiness > 50) instructions.push("hoarse/raspy voice");
   
-  const instructionStr = instructions.length > 0 ? `[Instruction: Speak ${instructions.join(", ")}] ` : "";
-  const prompt = `${instructionStr}${text}`;
+  // Use a softer instruction format to avoid 'OTHER' finish reason
+  const prompt = instructions.length > 0 ? `(Style: ${instructions.join(", ")}) ${text}` : text;
 
   const response = await ai.models.generateContent({
     model: "gemini-3.1-flash-tts-preview",
@@ -43,12 +53,16 @@ export async function generateSpeech(text: string, voice: VoiceName = 'Kore', ac
     },
   });
 
-  const part = response.candidates?.[0]?.content?.parts?.[0] as any;
-  const base64Audio = part?.inlineData?.data || part?.inline_data?.data;
+  const parts = response.candidates?.[0]?.content?.parts || [];
+  const part = parts.find((p: any) => p.inlineData || p.inline_data);
+  const base64Audio = (part as any)?.inlineData?.data || (part as any)?.inline_data?.data;
   
   if (!base64Audio) {
     const finishReason = response.candidates?.[0]?.finishReason || 'UNKNOWN';
-    throw new Error(`No audio data received from Gemini. Finish reason: ${finishReason}`);
+    // Check if there was a text part instead (which happens when audio fails)
+    const textPart = parts.find((p: any) => p.text);
+    const detail = textPart ? ` Model returned text instead of audio: "${textPart.text}"` : "";
+    throw new Error(`No audio data received from Gemini. Finish reason: ${finishReason}.${detail}`);
   }
   
   return base64Audio;

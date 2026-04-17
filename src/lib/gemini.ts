@@ -31,12 +31,13 @@ export async function generateSpeech(
   else if (pitch > 60) instructions.push("very high pitch");
   if (raspiness > 50) instructions.push("hoarse/raspy voice");
   
-  // Use a softer instruction format to avoid 'OTHER' finish reason
-  const prompt = instructions.length > 0 ? `(Style: ${instructions.join(", ")}) ${text}` : text;
+  // Use a cleaner, natural prompt structure. Gemini 3.1 Flash TTS responds better to inline parentheses/asterisks for acting.
+  const promptInstruction = instructions.length > 0 ? `(${instructions.join(", ")}) ` : "";
+  const finalPrompt = `${promptInstruction}${text}`;
 
   const response = await ai.models.generateContent({
     model: "gemini-3.1-flash-tts-preview",
-    contents: [{ parts: [{ text: prompt }] }],
+    contents: [{ parts: [{ text: finalPrompt }] }],
     config: {
       safetySettings: [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },

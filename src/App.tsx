@@ -76,6 +76,8 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Load presets on mount
@@ -91,12 +93,16 @@ export default function App() {
   }, []);
 
   const savePreset = () => {
-    const name = prompt('Nome para esta configuração de voz:');
-    if (!name) return;
+    setNewPresetName('');
+    setIsModalOpen(true);
+  };
+
+  const confirmSavePreset = () => {
+    if (!newPresetName.trim()) return;
 
     const newPreset: Preset = {
       id: Date.now().toString(),
-      name,
+      name: newPresetName.trim(),
       voice: selectedVoice,
       emotion: selectedEmotion,
       profile: selectedProfile,
@@ -107,6 +113,7 @@ export default function App() {
     const updated = [...presets, newPreset];
     setPresets(updated);
     localStorage.setItem('audio-spark-presets', JSON.stringify(updated));
+    setIsModalOpen(false);
   };
 
   const deletePreset = (id: string, e: React.MouseEvent) => {
@@ -467,6 +474,68 @@ export default function App() {
         </div>
       </div>
     </div>
+
+    {/* Custom Modal for Saving Presets */}
+    <AnimatePresence>
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsModalOpen(false)}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-sm bg-[#151619] border border-[#2a2b2f] rounded-2xl p-6 shadow-2xl"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-[#F27D26]/10 flex items-center justify-center text-[#F27D26]">
+                <Save size={20} />
+              </div>
+              <div>
+                <h3 className="text-white font-bold">Salvar Configuração</h3>
+                <p className="text-[#8E9299] text-[10px] uppercase tracking-wider">Novo Preset de Voz</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mono-label block mb-2">Nome da Configuração</label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={newPresetName}
+                  onChange={(e) => setNewPresetName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && confirmSavePreset()}
+                  placeholder="Ex: Voz Heróica, Narrador Suave..."
+                  className="w-full bg-[#0d0e11] border border-[#2a2b2f] rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-[#F27D26] transition-colors"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 h-11 rounded-lg border border-[#2a2b2f] text-[#8E9299] text-xs font-bold hover:bg-[#1a1b1e] hover:text-white transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmSavePreset}
+                  disabled={!newPresetName.trim()}
+                  className="flex-1 h-11 rounded-lg bg-[#F27D26] text-white text-xs font-bold hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 transition-all shadow-lg shadow-[#F27D26]/20"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
 

@@ -31,16 +31,12 @@ export async function generateSpeech(
   else if (pitch > 60) instructions.push("very high pitch");
   if (raspiness > 50) instructions.push("hoarse/raspy voice");
   
-  // Use a cleaner, natural prompt structure. Gemini 3.1 Flash TTS responds better to inline parentheses/asterisks for acting.
-  // Using *asterisks* specifically bypasses a known issue where (parentheses) trigger an 'OTHER' block state.
-  const promptInstruction = instructions.length > 0 ? `*${instructions.join(", ")}* ` : "";
+  // Use a cleaner, natural prompt structure. Gemini 3.1 Flash TTS sometimes fails with brackets/tags.
+  const promptInstruction = instructions.length > 0 ? `Tone: ${instructions.join(", ")}.\nText to speak: ` : "";
   const finalPrompt = `${promptInstruction}${text}`;
-  
-  const systemInstruction = "You are a professional voice actor. Output ONLY audio.";
 
   const response = await ai.models.generateContent({
     model: "gemini-3.1-flash-tts-preview",
-    systemInstruction: { parts: [{ text: systemInstruction }] },
     contents: [{ parts: [{ text: finalPrompt }] }],
     config: {
       safetySettings: [
@@ -49,7 +45,7 @@ export async function generateSpeech(
         { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
         { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
       ],
-      responseMimeType: "audio/wav",
+      responseModalities: ["AUDIO"],
       speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: { voiceName: voice },

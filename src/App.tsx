@@ -40,7 +40,6 @@ const EMOTIONS = [
   { id: 'angrily', label: 'Raiva', icon: '😠' },
   { id: 'furiously', label: 'Furioso', icon: '🤬' },
   { id: 'curiously', label: 'Curioso', icon: '🤔' },
-  { id: 'whispering', label: 'Sussurrando', icon: '🤫' },
   { id: 'fearfully', label: 'Medo', icon: '😨' },
   { id: 'terrified', label: 'Pavor', icon: '😱' },
   { id: 'grumpily', label: 'Ranzinza', icon: '😒' },

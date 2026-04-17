@@ -11,21 +11,21 @@ export async function generateSpeech(text: string, voice: VoiceName = 'Kore', ac
   let instructions = [];
   if (emotion) {
     if (Array.isArray(emotion)) {
-      if (emotion.length > 0) instructions.push(emotion.join(", "));
+      instructions.push(...emotion);
     } else {
       instructions.push(emotion);
     }
   }
   if (profile) instructions.push(`acting like a ${profile}`);
-  if (pitch < 40) instructions.push("with a very deep and grave pitch");
-  else if (pitch > 60) instructions.push("with a very high and acute pitch");
-  if (raspiness > 50) instructions.push("with a hoarse and raspy voice");
+  if (pitch < 40) instructions.push("very deep pitch");
+  else if (pitch > 60) instructions.push("very high pitch");
+  if (raspiness > 50) instructions.push("hoarse/raspy voice");
   
   const instructionStr = instructions.length > 0 ? `[Instruction: Speak ${instructions.join(", ")}] ` : "";
   const prompt = `${instructionStr}${text}`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-flash-tts-preview",
+    model: "gemini-1.5-flash",
     contents: [{ parts: [{ text: prompt }] }],
     config: {
       responseModalities: [Modality.AUDIO],

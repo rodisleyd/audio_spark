@@ -79,6 +79,7 @@ export default function App() {
   const [presets, setPresets] = useState<Preset[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
@@ -148,6 +149,8 @@ export default function App() {
     if (!text.trim() || isGenerating) return;
 
     setIsGenerating(true);
+    setError(null);
+    setAudioUrl(null); // Clear previous audio
     try {
       const base64 = await generateSpeech(text, selectedVoice, {
         emotion: selectedEmotions,
@@ -161,13 +164,12 @@ export default function App() {
         bytes[i] = binary.charCodeAt(i);
       }
       
-      // Gemini TTS returns raw PCM16 data. We need to wrap it in a WAV header
-      // so the browser's <audio> element can play it.
       const blob = pcmToWav(bytes, 24000);
       const url = URL.createObjectURL(blob);
       setAudioUrl(url);
-    } catch (error) {
-      console.error('TTS Generation failed:', error);
+    } catch (err: any) {
+      console.error('TTS Generation failed:', err);
+      setError(err.message || 'Ocorreu um erro ao gerar o áudio.');
     } finally {
       setIsGenerating(false);
     }
@@ -486,10 +488,22 @@ export default function App() {
                 )}
               </AnimatePresence>
 
-              {!audioUrl && !isGenerating && (
+              {!audioUrl && !isGenerating && !error && (
                 <div className="flex items-center justify-center gap-3 py-6 text-[#3a3b40] border border-dashed border-[#2a2b2f] rounded-xl">
                   <Mic2 size={16} />
                   <span className="mono-label">Awaiting Signal</span>
+                </div>
+              )}
+
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 flex items-center gap-3 text-red-500">
+                  <div className="flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider mb-1">Erro de Geração</p>
+                    <p className="text-xs">{error}</p>
+                  </div>
+                  <button onClick={() => setError(null)} className="hover:text-red-400">
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               )}
             </div>

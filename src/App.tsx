@@ -32,7 +32,7 @@ const VOICES: { id: VoiceName; label: string; desc: string }[] = [
 ];
 
 const EMOTIONS = [
-  { id: '', label: 'Padrão', icon: '⎯' },
+  { id: 'padrão', label: 'Padrão', icon: '⎯' },
   { id: 'cheerfully', label: 'Alegria', icon: '😊' },
   { id: 'sadly', label: 'Tristeza', icon: '😢' },
   { id: 'euphorically', label: 'Eufórico', icon: '🤩' },
@@ -41,6 +41,10 @@ const EMOTIONS = [
   { id: 'furiously', label: 'Furioso', icon: '🤬' },
   { id: 'curiously', label: 'Curioso', icon: '🤔' },
   { id: 'whispering', label: 'Sussurrando', icon: '🤫' },
+  { id: 'fearfully', label: 'Medo', icon: '😨' },
+  { id: 'terrified', label: 'Pavor', icon: '😱' },
+  { id: 'grumpily', label: 'Ranzinza', icon: '😒' },
+  { id: 'shouting', label: 'Gritando', icon: '😫' },
   { id: 'machiavellian', label: 'Maquiavélico', icon: '😈' },
   { id: 'swaggering', label: 'Fanfarrão', icon: '🤠' },
   { id: 'sweetly', label: 'Doce', icon: '🍬' },
@@ -59,7 +63,7 @@ interface Preset {
   id: string;
   name: string;
   voice: VoiceName;
-  emotion: string;
+  emotion: string | string[];
   profile: string;
   pitch: number;
   raspiness: number;
@@ -68,7 +72,7 @@ interface Preset {
 export default function App() {
   const [text, setText] = useState('Olá! Estou testando a conversão de texto em voz do Gemini.');
   const [selectedVoice, setSelectedVoice] = useState<VoiceName>('Kore');
-  const [selectedEmotion, setSelectedEmotion] = useState('');
+  const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
   const [selectedProfile, setSelectedProfile] = useState('');
   const [pitch, setPitch] = useState(50);
   const [raspiness, setRaspiness] = useState(0);
@@ -104,7 +108,7 @@ export default function App() {
       id: Date.now().toString(),
       name: newPresetName.trim(),
       voice: selectedVoice,
-      emotion: selectedEmotion,
+      emotion: selectedEmotions,
       profile: selectedProfile,
       pitch,
       raspiness
@@ -125,7 +129,8 @@ export default function App() {
 
   const loadPreset = (preset: Preset) => {
     setSelectedVoice(preset.voice);
-    setSelectedEmotion(preset.emotion);
+    const emo = Array.isArray(preset.emotion) ? preset.emotion : (preset.emotion ? [preset.emotion] : []);
+    setSelectedEmotions(emo);
     setSelectedProfile(preset.profile);
     setPitch(preset.pitch);
     setRaspiness(preset.raspiness);
@@ -133,7 +138,7 @@ export default function App() {
 
   const resetSettings = () => {
     setSelectedVoice('Kore');
-    setSelectedEmotion('');
+    setSelectedEmotions([]);
     setSelectedProfile('');
     setPitch(50);
     setRaspiness(0);
@@ -145,7 +150,7 @@ export default function App() {
     setIsGenerating(true);
     try {
       const base64 = await generateSpeech(text, selectedVoice, {
-        emotion: selectedEmotion,
+        emotion: selectedEmotions,
         profile: selectedProfile,
         pitch,
         raspiness
@@ -325,20 +330,36 @@ export default function App() {
               Acting / Emotion
             </span>
             <div className="grid grid-cols-2 gap-1 overflow-y-auto max-h-[160px] pr-1 scrollbar-hide">
-              {EMOTIONS.map((emotion) => (
-                <button
-                  key={emotion.id}
-                  onClick={() => setSelectedEmotion(emotion.id)}
-                  className={`p-2 rounded-lg text-left transition-all text-[9px] flex items-center gap-2 border ${
-                    selectedEmotion === emotion.id 
-                      ? 'bg-[#F27D26] text-white border-[#F27D26]' 
-                      : 'bg-[#1a1b1e] text-[#8E9299] border-[#2a2b2f]'
-                  }`}
-                >
-                  <span>{emotion.icon}</span>
-                  <span className="font-medium truncate">{emotion.label}</span>
-                </button>
-              ))}
+              {EMOTIONS.map((emotion) => {
+                const isSelected = emotion.id === 'padrão' 
+                  ? selectedEmotions.length === 0 
+                  : selectedEmotions.includes(emotion.id);
+                  
+                return (
+                  <button
+                    key={emotion.id}
+                    onClick={() => {
+                      if (emotion.id === 'padrão') {
+                        setSelectedEmotions([]);
+                      } else {
+                        setSelectedEmotions(prev => 
+                          prev.includes(emotion.id)
+                            ? prev.filter(e => e !== emotion.id)
+                            : [...prev, emotion.id]
+                        );
+                      }
+                    }}
+                    className={`p-2 rounded-lg text-left transition-all text-[9px] flex items-center gap-2 border ${
+                      isSelected 
+                        ? 'bg-[#F27D26] text-white border-[#F27D26]' 
+                        : 'bg-[#1a1b1e] text-[#8E9299] border-[#2a2b2f] hover:border-[#F27D26]/50'
+                    }`}
+                  >
+                    <span>{emotion.icon}</span>
+                    <span className="font-medium truncate">{emotion.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

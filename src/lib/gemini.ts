@@ -4,11 +4,17 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export type VoiceName = 'Puck' | 'Charon' | 'Kore' | 'Fenrir' | 'Zephyr';
 
-export async function generateSpeech(text: string, voice: VoiceName = 'Kore', acting: { emotion: string, profile: string, pitch: number, raspiness: number }): Promise<string> {
+export async function generateSpeech(text: string, voice: VoiceName = 'Kore', acting: { emotion: string | string[], profile: string, pitch: number, raspiness: number }): Promise<string> {
   const { emotion, profile, pitch, raspiness } = acting;
   
   let instructions = [];
-  if (emotion) instructions.push(emotion);
+  if (emotion) {
+    if (Array.isArray(emotion)) {
+      if (emotion.length > 0) instructions.push(emotion.join(", "));
+    } else {
+      instructions.push(emotion);
+    }
+  }
   if (profile) instructions.push(`acting like a ${profile}`);
   if (pitch < 40) instructions.push("with a very deep and grave pitch");
   else if (pitch > 60) instructions.push("with a very high and acute pitch");

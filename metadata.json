@@ -1,0 +1,6 @@
+{
+  "name": "Gemini Audio Spark",
+  "description": "Transform your text into expressive speech using Gemini's state-of-the-art TTS technology.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

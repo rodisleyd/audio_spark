@@ -28,6 +28,12 @@ export async function generateSpeech(text: string, voice: VoiceName = 'Kore', ac
     model: "gemini-3.1-flash-tts-preview",
     contents: [{ parts: [{ text: prompt }] }],
     config: {
+      safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+      ],
       responseModalities: ["AUDIO"],
       speechConfig: {
           voiceConfig: {
@@ -39,8 +45,10 @@ export async function generateSpeech(text: string, voice: VoiceName = 'Kore', ac
 
   const part = response.candidates?.[0]?.content?.parts?.[0] as any;
   const base64Audio = part?.inlineData?.data || part?.inline_data?.data;
+  
   if (!base64Audio) {
-    throw new Error("No audio data received from Gemini.");
+    const finishReason = response.candidates?.[0]?.finishReason || 'UNKNOWN';
+    throw new Error(`No audio data received from Gemini. Finish reason: ${finishReason}`);
   }
   
   return base64Audio;

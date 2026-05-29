@@ -5,34 +5,38 @@ dotenv.config();
 const apiKey = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 const ai = new GoogleGenAI({ apiKey });
 
-async function test() {
-  const prompt = "Hello world";
-  const voice = "Puck";
-
-  const response = await ai.models.generateContent({
-    model: "gemini-3.1-flash-tts-preview",
-    contents: [{ parts: [{ text: prompt }] }],
-    config: {
-      responseModalities: [Modality.AUDIO],
-      speechConfig: {
+async function testModel(modelName: string) {
+  console.log(`Testing model: ${modelName}`);
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: [{ parts: [{ text: "Hello world" }] }],
+      config: {
+        responseModalities: ["AUDIO"],
+        speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: voice },
+            prebuiltVoiceConfig: { voiceName: 'Puck' },
           },
+        },
       },
-    },
-  });
+    });
 
-  const parts = response.candidates?.[0]?.content?.parts || [];
-  console.log("Number of parts:", parts.length);
-  for (let i = 0; i < parts.length; i++) {
-    console.log(`Part ${i}:`, Object.keys(parts[i]));
-    if (parts[i].inlineData) {
-        console.log(`  inlineData keys:`, Object.keys(parts[i].inlineData));
+    const parts = response.candidates?.[0]?.content?.parts || [];
+    console.log(`Success! ${modelName} returned ${parts.length} parts.`);
+    const inlineDataPart = parts.find(p => p.inlineData);
+    if (inlineDataPart) {
+      console.log(`  Found inlineData of size: ${inlineDataPart.inlineData.data?.length}`);
+    } else {
+      console.log("  No inlineData part found.");
     }
-    if (parts[i].text) {
-        console.log(`  text:`, parts[i].text);
-    }
+  } catch (err: any) {
+    console.error(`  Error for ${modelName}:`, err.message || err);
   }
+}
+
+async function test() {
+  await testModel("gemini-2.5-flash-preview-tts");
+  await testModel("gemini-2.5-pro-preview-tts");
 }
 
 test().catch(console.error);
